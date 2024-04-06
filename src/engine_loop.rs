@@ -32,12 +32,15 @@ pub async fn run() {
                     elwt.exit();
                 }
                 WindowEvent::RedrawRequested => match renderer.render(&context) {
-                    Ok(_) => {}
+                    Ok(_) => window.request_redraw(),
                     Err(wgpu::SurfaceError::Lost) => elwt.exit(),
                     Err(wgpu::SurfaceError::OutOfMemory) => elwt.exit(),
                     Err(e) => log::error!("Surface error: {:?}", e),
                 },
-                WindowEvent::Resized(new_size) => context.resize_surface_config(new_size),
+                WindowEvent::Resized(new_size) => {
+                    window.request_redraw();
+                    context.resize_surface_config(new_size);
+                }
                 _ => (),
             },
 

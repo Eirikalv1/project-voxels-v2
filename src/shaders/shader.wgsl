@@ -16,9 +16,12 @@ fn vs_main(model: VertexInput) -> VertexOutput {
     return out;
 }
 
+@group(0) @binding(0) var<uniform> frame_data: vec2<f32>;
+
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let u = in.color.x;
-    let v = in.color.y;
-    return vec4<f32>(u, v, 0.0, 1.0);
+    let coord = vec3<f32>(in.color, 0.0) * 2.0 - 1.0; // -1 -> 1
+
+
+    return vec4<f32>(coord.x, coord.y, 0.0, 1.0);
 } 

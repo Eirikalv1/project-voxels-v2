@@ -3,19 +3,19 @@ use std::{borrow::Cow, env::current_dir, fs};
 use super::Vertex;
 
 pub struct PiplineBuilder {
-    shader_filename: String,
-    vertex_entry: String,
     fragment_entry: String,
     pixel_format: wgpu::TextureFormat,
+    shader_filename: String,
+    vertex_entry: String,
 }
 
 impl PiplineBuilder {
     pub fn new() -> Self {
         Self {
-            shader_filename: "".to_string(),
-            vertex_entry: "".to_string(),
             fragment_entry: "".to_string(),
             pixel_format: wgpu::TextureFormat::Rgba8Unorm,
+            shader_filename: "".to_string(),
+            vertex_entry: "".to_string(),
         }
     }
 
@@ -29,7 +29,7 @@ impl PiplineBuilder {
         self.pixel_format = pixel_format;
     }
 
-    pub fn build(&self, device: &wgpu::Device) -> wgpu::RenderPipeline {
+    pub fn build(&self, device: &wgpu::Device, frame_data_group_layout: &wgpu::BindGroupLayout) -> wgpu::RenderPipeline {
         let mut filepath = current_dir().unwrap();
         filepath.push("src/");
         filepath.push(self.shader_filename.as_str());
@@ -43,8 +43,8 @@ impl PiplineBuilder {
         let shader_module = device.create_shader_module(shader_module_descriptor);
 
         let pipeline_layout_descriptor = wgpu::PipelineLayoutDescriptor {
-            label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[],
+            label: Some("Render pipeline layout"),
+            bind_group_layouts: &[frame_data_group_layout],
             push_constant_ranges: &[],
         };
         let render_pipeline_layout = device.create_pipeline_layout(&pipeline_layout_descriptor);
@@ -56,7 +56,7 @@ impl PiplineBuilder {
         })];
 
         let render_pipeline_descriptor = wgpu::RenderPipelineDescriptor {
-            label: Some("Render Pipeline"),
+            label: Some("Render pipeline"),
             layout: Some(&render_pipeline_layout),
 
             vertex: wgpu::VertexState {
