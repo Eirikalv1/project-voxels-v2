@@ -62,7 +62,7 @@ impl PiplineBuilder {
             vertex: wgpu::VertexState {
                 module: &shader_module,
                 entry_point: &self.vertex_entry,
-                buffers: &[Vertex::desc()],
+                buffers: &[Vertex::description()],
             },
 
             primitive: wgpu::PrimitiveState {

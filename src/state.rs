@@ -2,9 +2,7 @@ use crate::renderer::{
     adapter_builder::AdapterBuilder, command_encoder_builder::CommandEncoderBuilder, device_builder::DeviceBuilder,
     instance_builder::InstanceBuilder, pipeline_builder::PiplineBuilder, surface_builder::SurfaceBuilder,
 };
-
 use wgpu::{util::DeviceExt, RenderPipeline};
-
 use winit::{dpi::PhysicalSize, window::Window};
 
 #[repr(C)]
@@ -15,39 +13,41 @@ pub struct Vertex {
 }
 
 impl Vertex {
-    const ATTRIBS: [wgpu::VertexAttribute; 2] = wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3];
+    const ATTRIBUTES: [wgpu::VertexAttribute; 2] = wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3];
 
-    pub fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
+    pub fn description<'a>() -> wgpu::VertexBufferLayout<'a> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Self>() as u64,
             step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &Self::ATTRIBS,
+            attributes: &Self::ATTRIBUTES,
         }
     }
 }
 
+#[rustfmt::skip]
 const VERTICES: &[Vertex] = &[
-    Vertex {
-        position: [0.0, 0.5, 0.0],
-        color: [1.0, 0.0, 0.0],
-    },
-    Vertex {
-        position: [-0.5, -0.5, 0.0],
-        color: [0.0, 1.0, 0.0],
-    },
-    Vertex {
-        position: [0.5, -0.5, 0.0],
-        color: [0.0, 0.0, 1.0],
-    },
+    Vertex { position: [-0.0868241, 0.49240386, 0.0], color: [0.5, 0.0, 0.5] }, // A
+    Vertex { position: [-0.49513406, 0.06958647, 0.0], color: [0.5, 0.0, 0.5] }, // B
+    Vertex { position: [-0.21918549, -0.44939706, 0.0], color: [0.5, 0.0, 0.5] }, // C
+    Vertex { position: [0.35966998, -0.3473291, 0.0], color: [0.5, 0.0, 0.5] }, // D
+    Vertex { position: [0.44147372, 0.2347359, 0.0], color: [0.5, 0.0, 0.5] }, // E
+];
+
+#[rustfmt::skip]
+const INDICES: &[u16] = &[
+    0, 1, 4,
+    1, 2, 4,
+    2, 3, 4,
 ];
 
 pub struct State<'a> {
-    surface: wgpu::Surface<'a>,
-    device: wgpu::Device,
-    queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
+    device: wgpu::Device,
+    index_buffer: wgpu::Buffer,
+    queue: wgpu::Queue,
     size: PhysicalSize<u32>,
     render_pipeline: RenderPipeline,
+    surface: wgpu::Surface<'a>,
     vertex_buffer: wgpu::Buffer,
     pub window: &'a Window,
 }
@@ -77,6 +77,12 @@ impl<'a> State<'a> {
             usage: wgpu::BufferUsages::VERTEX,
         });
 
+        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Index Buffer"),
+            contents: bytemuck::cast_slice(INDICES),
+            usage: wgpu::BufferUsages::INDEX,
+        });
+
         let size = window.inner_size();
 
         let mut pipeline_builder = PiplineBuilder::new();
@@ -85,14 +91,15 @@ impl<'a> State<'a> {
         let render_pipeline = pipeline_builder.build(&device);
 
         Self {
-            window,
-            surface,
-            device,
-            vertex_buffer,
-            queue,
             config,
+            device,
+            index_buffer,
+            queue,
             size,
+            surface,
             render_pipeline,
+            vertex_buffer,
+            window,
         }
     }
 
@@ -130,7 +137,8 @@ impl<'a> State<'a> {
         let mut render_pass = command_encoder.begin_render_pass(&render_pass_descriptor);
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-        render_pass.draw(0..VERTICES.len() as u32, 0..1);
+        render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+        render_pass.draw_indexed(0..INDICES.len() as u32, 0, 0..1);
         drop(render_pass);
 
         self.queue.submit(std::iter::once(command_encoder.finish()));
