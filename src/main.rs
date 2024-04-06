@@ -103,7 +103,9 @@ impl<'a> State<'a> {
         let image_view_descriptor = wgpu::TextureViewDescriptor::default();
         let image_view = drawable.texture.create_view(&image_view_descriptor);
 
-        let command_encoder_descriptor = wgpu::CommandEncoderDescriptor { label: Some("Render Encoder") };
+        let command_encoder_descriptor = wgpu::CommandEncoderDescriptor {
+            label: Some("Render Encoder"),
+        };
         let mut command_encoder = self.device.create_command_encoder(&command_encoder_descriptor);
 
         let color_attachment = wgpu::RenderPassColorAttachment {
