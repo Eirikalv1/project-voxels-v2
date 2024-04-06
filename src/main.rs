@@ -1,7 +1,7 @@
 mod renderer;
-use renderer::pipeline_builder::PiplineBuilder;
+use renderer::{adapter_builder::AdapterBuilder, device_builder::{self, DeviceBuilder}, instance_builder::InstanceBuilder, pipeline_builder::PiplineBuilder, surface_builder::SurfaceBuilder};
 
-use wgpu::RenderPipeline;
+use wgpu::{util::DeviceExt, RenderPipeline};
 use winit::{
     dpi::PhysicalSize,
     event::{ElementState, Event, KeyEvent, WindowEvent},
@@ -9,6 +9,19 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
     window::{Window, WindowBuilder},
 };
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+struct Vertex {
+    position: [f32; 3],
+    color: [f32; 3],
+}
+
+const VERTICES: &[Vertex] = &[
+    Vertex { position: [0.0, 0.5, 0.0], color: [1.0, 0.0, 0.0] },
+    Vertex { position: [-0.5, -0.5, 0.0], color: [0.0, 1.0, 0.0] },
+    Vertex { position: [0.5, -0.5, 0.0], color: [0.0, 0.0, 1.0] },
+];
 
 struct State<'a> {
     surface: wgpu::Surface<'a>,
@@ -18,28 +31,24 @@ struct State<'a> {
     size: PhysicalSize<u32>,
     window: &'a Window,
     render_pipeline: RenderPipeline,
+    vertex_buffer: wgpu::Buffer,
 }
 
 impl<'a> State<'a> {
     async fn new(window: &'a Window) -> Self {
         let size = window.inner_size();
 
-        let instance_descriptor = wgpu::InstanceDescriptor::default();
-        let instance = wgpu::Instance::new(instance_descriptor);
+        let instance_builder = InstanceBuilder::new();
+        let instance = instance_builder.build();
 
-        let surface = instance.create_surface(window).unwrap();
+        let surface_builder: SurfaceBuilder = SurfaceBuilder::new();
+        let surface: wgpu::Surface<'a> = surface_builder.build(&instance, &window);
 
-        let adapter_descriptor = wgpu::RequestAdapterOptions {
-            compatible_surface: Some(&surface),
-            ..Default::default()
-        };
-        let adapter = instance.request_adapter(&adapter_descriptor).await.unwrap();
+        let adapter_builder = AdapterBuilder::new();
+        let adapter = adapter_builder.build(&instance, &surface).await;
 
-        let device_descriptor = wgpu::DeviceDescriptor {
-            label: Some("Device"),
-            ..Default::default()
-        };
-        let (device, queue) = adapter.request_device(&device_descriptor, None).await.unwrap();
+        let device_builder = DeviceBuilder::new();
+        let (device, queue) = device_builder.build(&adapter).await;
 
         let surface_capabilities = surface.get_capabilities(&adapter);
         let surface_format = surface_capabilities
@@ -61,16 +70,25 @@ impl<'a> State<'a> {
         };
         surface.configure(&device, &config);
 
+        let vertex_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Vertex Buffer"),
+                contents: bytemuck::cast_slice(VERTICES),
+                usage: wgpu::BufferUsages::VERTEX,
+            }
+        );
+
         let mut pipeline_builder = PiplineBuilder::new();
         pipeline_builder.set_shader_module("shaders/shader.wgsl", "vertex", "fragment");
         pipeline_builder.set_pixel_format(config.format);
         
-        let render_pipeline = pipeline_builder.build_pipeline(&device);
+        let render_pipeline = pipeline_builder.build(&device);
 
         Self {
             window,
             surface,
             device,
+            vertex_buffer,
             queue,
             config,
             size,
