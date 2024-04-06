@@ -1,4 +1,4 @@
-use wgpu1::window_loop::run;
+use wgpu1::engine_loop::run;
 
 fn main() {
     std::env::set_var("RUST_LOG", "error");

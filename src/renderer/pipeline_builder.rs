@@ -1,6 +1,6 @@
 use std::{borrow::Cow, env::current_dir, fs};
 
-use crate::state::Vertex;
+use super::Vertex;
 
 pub struct PiplineBuilder {
     shader_filename: String,

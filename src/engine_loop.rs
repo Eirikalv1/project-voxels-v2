@@ -1,4 +1,4 @@
-use crate::state::State;
+use crate::{renderer::Renderer, GpuContext};
 
 use winit::{
     event::{ElementState, Event, KeyEvent, WindowEvent},
@@ -11,11 +11,13 @@ pub async fn run() {
     let event_loop = EventLoopBuilder::new().build().unwrap();
     let window = WindowBuilder::new().build(&event_loop).unwrap();
 
-    let mut state = State::new(&window).await;
+    let mut context = GpuContext::new(&window).await;
+    let renderer = Renderer::new(&context);
 
+    let window = &window;
     event_loop
         .run(move |event, elwt| match event {
-            Event::WindowEvent { window_id, ref event } if window_id == state.window.id() => match event {
+            Event::WindowEvent { window_id, ref event } if window_id == window.id() => match event {
                 WindowEvent::CloseRequested
                 | WindowEvent::KeyboardInput {
                     event:
@@ -29,20 +31,17 @@ pub async fn run() {
                 } => {
                     elwt.exit();
                 }
-                WindowEvent::RedrawRequested => match state.render() {
+                WindowEvent::RedrawRequested => match renderer.render(&context) {
                     Ok(_) => {}
-                    Err(wgpu::SurfaceError::Lost) => state.resize(state.get_size()),
+                    Err(wgpu::SurfaceError::Lost) => elwt.exit(),
                     Err(wgpu::SurfaceError::OutOfMemory) => elwt.exit(),
-                    Err(e) => log::error!("SurfaceError: {:?}", e),
+                    Err(e) => log::error!("Surface error: {:?}", e),
                 },
-                WindowEvent::Resized(new_size) => {
-                    state.resize(*new_size);
-                    state.window.request_redraw();
-                }
+                WindowEvent::Resized(new_size) => context.resize_surface_config(new_size),
                 _ => (),
             },
 
             _ => {}
         })
-        .unwrap();
+        .expect("Event loop failed.");
 }

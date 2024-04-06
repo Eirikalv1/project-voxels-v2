@@ -9,7 +9,7 @@ struct VertexOutput {
 }
 
 @vertex
-fn vertex(model: VertexInput) -> VertexOutput {
+fn vs_main(model: VertexInput) -> VertexOutput {
     var out: VertexOutput;
     out.clip_position = vec4<f32>(model.position, 0.0, 1.0);
     out.color = model.color;
@@ -17,7 +17,7 @@ fn vertex(model: VertexInput) -> VertexOutput {
 }
 
 @fragment
-fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
+fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let u = in.color.x;
     let v = in.color.y;
     return vec4<f32>(u, v, 0.0, 1.0);
