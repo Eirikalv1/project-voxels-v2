@@ -10,7 +10,6 @@ impl DeviceBuilder {
             label: Some("Device"),
             ..Default::default()
         };
-        let (device, queue) = adapter.request_device(&device_descriptor, None).await.unwrap();
-        (device, queue)
+        adapter.request_device(&device_descriptor, None).await.unwrap()
     }
 }

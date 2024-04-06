@@ -15,6 +15,6 @@ impl Vertex {
 
     pub fn set_vertex(&mut self, position: [f32; 3], color: [f32; 3]) {
         self.position = position;
-        self.color = color ;
+        self.color = color;
     }
 }

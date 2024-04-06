@@ -39,7 +39,7 @@ impl PiplineBuilder {
             source: wgpu::ShaderSource::Wgsl(source_code),
         };
         let shader_module = device.create_shader_module(shader_module_descriptor);
-        
+
         let pipeline_layout_descriptor = wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
             bind_group_layouts: &[],

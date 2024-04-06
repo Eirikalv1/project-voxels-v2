@@ -1,5 +1,8 @@
 mod renderer;
-use renderer::{adapter_builder::AdapterBuilder, device_builder::{self, DeviceBuilder}, instance_builder::InstanceBuilder, pipeline_builder::PiplineBuilder, surface_builder::SurfaceBuilder};
+use renderer::{
+    adapter_builder::AdapterBuilder, device_builder::DeviceBuilder, instance_builder::InstanceBuilder, pipeline_builder::PiplineBuilder,
+    surface_builder::SurfaceBuilder,
+};
 
 use wgpu::{util::DeviceExt, RenderPipeline};
 use winit::{
@@ -18,9 +21,18 @@ struct Vertex {
 }
 
 const VERTICES: &[Vertex] = &[
-    Vertex { position: [0.0, 0.5, 0.0], color: [1.0, 0.0, 0.0] },
-    Vertex { position: [-0.5, -0.5, 0.0], color: [0.0, 1.0, 0.0] },
-    Vertex { position: [0.5, -0.5, 0.0], color: [0.0, 0.0, 1.0] },
+    Vertex {
+        position: [0.0, 0.5, 0.0],
+        color: [1.0, 0.0, 0.0],
+    },
+    Vertex {
+        position: [-0.5, -0.5, 0.0],
+        color: [0.0, 1.0, 0.0],
+    },
+    Vertex {
+        position: [0.5, -0.5, 0.0],
+        color: [0.0, 0.0, 1.0],
+    },
 ];
 
 struct State<'a> {
@@ -36,13 +48,11 @@ struct State<'a> {
 
 impl<'a> State<'a> {
     async fn new(window: &'a Window) -> Self {
-        let size = window.inner_size();
-
         let instance_builder = InstanceBuilder::new();
         let instance = instance_builder.build();
 
         let surface_builder: SurfaceBuilder = SurfaceBuilder::new();
-        let surface: wgpu::Surface<'a> = surface_builder.build(&instance, &window);
+        let surface = surface_builder.build(&instance, window);
 
         let adapter_builder = AdapterBuilder::new();
         let adapter = adapter_builder.build(&instance, &surface).await;
@@ -50,38 +60,22 @@ impl<'a> State<'a> {
         let device_builder = DeviceBuilder::new();
         let (device, queue) = device_builder.build(&adapter).await;
 
-        let surface_capabilities = surface.get_capabilities(&adapter);
-        let surface_format = surface_capabilities
-            .formats
-            .iter()
-            .copied()
-            .filter(|f| f.is_srgb())
-            .next()
-            .unwrap_or(surface_capabilities.formats[0]);
-        let config = wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: surface_format,
-            width: size.width,
-            height: size.height,
-            present_mode: surface_capabilities.present_modes[0],
-            alpha_mode: surface_capabilities.alpha_modes[0],
-            view_formats: vec![],
-            desired_maximum_frame_latency: 2,
-        };
+        let capabilities = surface.get_capabilities(&adapter);
+        let format = surface_builder.create_initial_format(&capabilities);
+        let config = surface_builder.create_initial_configuration(&capabilities, &format, window);
         surface.configure(&device, &config);
 
-        let vertex_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Vertex Buffer"),
-                contents: bytemuck::cast_slice(VERTICES),
-                usage: wgpu::BufferUsages::VERTEX,
-            }
-        );
+        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Vertex Buffer"),
+            contents: bytemuck::cast_slice(VERTICES),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+
+        let size = window.inner_size();
 
         let mut pipeline_builder = PiplineBuilder::new();
         pipeline_builder.set_shader_module("shaders/shader.wgsl", "vertex", "fragment");
         pipeline_builder.set_pixel_format(config.format);
-        
         let render_pipeline = pipeline_builder.build(&device);
 
         Self {
@@ -98,7 +92,6 @@ impl<'a> State<'a> {
 
     fn resize(&mut self, new_size: PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
-            self.size = new_size;
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
@@ -110,9 +103,7 @@ impl<'a> State<'a> {
         let image_view_descriptor = wgpu::TextureViewDescriptor::default();
         let image_view = drawable.texture.create_view(&image_view_descriptor);
 
-        let command_encoder_descriptor = wgpu::CommandEncoderDescriptor {
-            label: Some("Render Encoder"),
-        };
+        let command_encoder_descriptor = wgpu::CommandEncoderDescriptor { label: Some("Render Encoder") };
         let mut command_encoder = self.device.create_command_encoder(&command_encoder_descriptor);
 
         let color_attachment = wgpu::RenderPassColorAttachment {
@@ -129,7 +120,7 @@ impl<'a> State<'a> {
             color_attachments: &[Some(color_attachment)],
             ..Default::default()
         };
-        
+
         let mut render_pass = command_encoder.begin_render_pass(&render_pass_descriptor);
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.draw(0..3, 0..1);

@@ -7,8 +7,6 @@ impl InstanceBuilder {
 
     pub fn build(&self) -> wgpu::Instance {
         let descriptor = wgpu::InstanceDescriptor::default();
-        let instance = wgpu::Instance::new(descriptor);
-
-        instance
+        wgpu::Instance::new(descriptor)
     }
 }
