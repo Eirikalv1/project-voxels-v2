@@ -13,7 +13,12 @@ impl SurfaceBuilder {
     }
 
     pub fn create_initial_format(&self, capabilities: &SurfaceCapabilities) -> wgpu::TextureFormat {
-        capabilities.formats.iter().copied().find(|f| f.is_srgb()).unwrap_or(capabilities.formats[0])
+        capabilities
+            .formats
+            .iter()
+            .copied()
+            .find(|f| f.is_srgb())
+            .unwrap_or(capabilities.formats[0])
     }
 
     pub fn create_initial_configuration(
