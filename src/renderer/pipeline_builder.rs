@@ -1,5 +1,7 @@
 use std::{borrow::Cow, env::current_dir, fs};
 
+use crate::state::Vertex;
+
 pub struct PiplineBuilder {
     shader_filename: String,
     vertex_entry: String,
@@ -60,7 +62,7 @@ impl PiplineBuilder {
             vertex: wgpu::VertexState {
                 module: &shader_module,
                 entry_point: &self.vertex_entry,
-                buffers: &[],
+                buffers: &[Vertex::desc()],
             },
 
             primitive: wgpu::PrimitiveState {
