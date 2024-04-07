@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use winit::{dpi::PhysicalSize, window::Window};
 
 pub mod engine_loop;
@@ -70,5 +72,31 @@ impl<'a> GpuContext<'a> {
             self.surface_config.height = new_size.height;
             self.surface.configure(&self.device, &self.surface_config);
         }
+    }
+}
+
+pub struct FrameTimer {
+    start: Instant,
+    end: Instant,
+}
+
+impl FrameTimer {
+    pub fn new() -> Self {
+        FrameTimer {
+            start: Instant::now(),
+            end: Instant::now(),
+        }
+    }
+
+    pub fn start(&mut self) {
+        self.start = Instant::now();
+    }
+
+    pub fn end(&mut self) {
+        self.end = Instant::now();
+    }
+
+    pub fn delta_time(&self) -> u128 {
+        (self.end - self.start).as_millis()
     }
 }

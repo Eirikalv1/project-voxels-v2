@@ -1,4 +1,4 @@
-use crate::{renderer::Renderer, GpuContext};
+use crate::{renderer::Renderer, FrameTimer, GpuContext};
 
 use winit::{
     dpi::LogicalSize,
@@ -18,6 +18,9 @@ pub async fn run() {
     let mut context = GpuContext::new(&window).await;
     let renderer = Renderer::new(&context);
 
+    let mut frame_timer = FrameTimer::new();
+    frame_timer.start();
+
     let window = &window;
     event_loop
         .run(move |event, elwt| match event {
@@ -36,7 +39,12 @@ pub async fn run() {
                     elwt.exit();
                 }
                 WindowEvent::RedrawRequested => match renderer.render(&context) {
-                    Ok(_) => window.request_redraw(),
+                    Ok(_) => {
+                        frame_timer.end();
+                        //dbg!(frame_timer.delta_time());
+                        frame_timer.start();
+                        window.request_redraw()
+                    }
                     Err(wgpu::SurfaceError::Lost) => elwt.exit(),
                     Err(wgpu::SurfaceError::OutOfMemory) => elwt.exit(),
                     Err(e) => log::error!("Surface error: {:?}", e),
