@@ -1,4 +1,3 @@
-use egui_wgpu::ScreenDescriptor;
 use wgpu::util::DeviceExt;
 use winit::window::Window;
 
@@ -133,7 +132,7 @@ impl Renderer {
         };
 
         let render_pass_descriptor = wgpu::RenderPassDescriptor {
-            label: Some("Render Pass"),
+            label: Some("Main render Pass"),
             color_attachments: &[Some(color_attachment)],
             ..Default::default()
         };
@@ -152,31 +151,7 @@ impl Renderer {
         render_pass.draw_indexed(0..INDICES.len() as u32, 0, 0..1);
         drop(render_pass);
 
-        let screen_descriptor = ScreenDescriptor {
-            size_in_pixels: [context.surface_config.width, context.surface_config.height],
-            pixels_per_point: window.scale_factor() as f32,
-        };
-
-        let view = drawable.texture.create_view(&wgpu::TextureViewDescriptor {
-            label: None,
-            format: None,
-            dimension: None,
-            aspect: wgpu::TextureAspect::All,
-            base_mip_level: 0,
-            mip_level_count: None,
-            base_array_layer: 0,
-            array_layer_count: None,
-        });
-
-        egui.draw(
-            &context.device,
-            &mut command_encoder,
-            &context.queue,
-            |ui| gui(ui, frametime),
-            screen_descriptor,
-            &window,
-            &view,
-        );
+        egui.draw(context, &drawable, &mut command_encoder, |ui| gui(ui, frametime), window);
 
         context.queue.submit(std::iter::once(command_encoder.finish()));
 

@@ -39,7 +39,7 @@ pub async fn run() {
                     } => {
                         elwt.exit();
                     }
-                    WindowEvent::RedrawRequested => match renderer.render(&context, &mut egui, &window, frame_timer.delta_time()) {
+                    WindowEvent::RedrawRequested => match renderer.render(&context, &mut egui, window, frame_timer.delta_time()) {
                         Ok(_) => {}
                         Err(wgpu::SurfaceError::Lost) => elwt.exit(),
                         Err(wgpu::SurfaceError::OutOfMemory) => elwt.exit(),

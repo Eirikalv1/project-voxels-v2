@@ -48,6 +48,7 @@ impl<'a> GpuContext<'a> {
             .copied()
             .find(|f| f.is_srgb())
             .unwrap_or(surface_capabilities.formats[0]);
+
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
@@ -96,5 +97,11 @@ impl FrameTimer {
         self.delta_time = (new_time - self.time).as_millis();
         self.time = new_time;
         self.delta_time
+    }
+}
+
+impl Default for FrameTimer {
+    fn default() -> Self {
+        Self::new()
     }
 }

@@ -1,6 +1,9 @@
 use egui_wgpu::{Renderer, ScreenDescriptor};
 use egui_winit::{egui::Context, State};
+use wgpu::SurfaceTexture;
 use winit::{event::WindowEvent, window::Window};
+
+use crate::GpuContext;
 
 // From: https://github.com/ejb004/egui-wgpu-demo/blob/master/src/gui.rs
 
@@ -22,26 +25,41 @@ impl EguiRenderer {
 
     pub fn draw(
         &mut self,
-        device: &wgpu::Device,
+        context: &GpuContext,
+        drawable: &SurfaceTexture,
         encoder: &mut wgpu::CommandEncoder,
-        queue: &wgpu::Queue,
         run_ui: impl FnOnce(&Context),
-        screen_descriptor: ScreenDescriptor,
         window: &Window,
-        window_surface_view: &wgpu::TextureView,
     ) {
-        let raw_input = self.state.take_egui_input(&window);
+        let screen_descriptor = ScreenDescriptor {
+            size_in_pixels: [context.surface_config.width, context.surface_config.height],
+            pixels_per_point: window.scale_factor() as f32,
+        };
+
+        let window_surface_view = drawable.texture.create_view(&wgpu::TextureViewDescriptor {
+            label: Some("Egui texture"),
+            format: None,
+            dimension: None,
+            aspect: wgpu::TextureAspect::All,
+            base_mip_level: 0,
+            mip_level_count: None,
+            base_array_layer: 0,
+            array_layer_count: None,
+        });
+
+        let raw_input = self.state.take_egui_input(window);
         let full_output = self.context.run(raw_input, |_| {
             run_ui(&self.context);
         });
 
-        self.state.handle_platform_output(&window, full_output.platform_output);
+        self.state.handle_platform_output(window, full_output.platform_output);
 
         let tris = self.context.tessellate(full_output.shapes, full_output.pixels_per_point);
         for (id, image_delta) in &full_output.textures_delta.set {
-            self.renderer.update_texture(&device, &queue, *id, &image_delta);
+            self.renderer.update_texture(&context.device, &context.queue, *id, image_delta);
         }
-        self.renderer.update_buffers(&device, &queue, encoder, &tris, &screen_descriptor);
+        self.renderer
+            .update_buffers(&context.device, &context.queue, encoder, &tris, &screen_descriptor);
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: &window_surface_view,
@@ -76,7 +94,7 @@ pub fn gui(ui: &Context, frametime: u128) {
         .default_width(800.0)
         .resizable(true)
         .anchor(egui::Align2::LEFT_TOP, [0.0, 0.0])
-        .show(&ui, |ui| {
+        .show(ui, |ui| {
             ui.label(format!("Frametime: {}ms", frametime));
 
             ui.end_row();
