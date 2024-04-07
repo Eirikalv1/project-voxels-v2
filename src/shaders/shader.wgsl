@@ -21,8 +21,13 @@ fn vs_main(model: VertexInput) -> VertexOutput {
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let coord = vec2<f32>(in.color) * 2.0 - 1.0; // -1 -> 1
+    let color = per_pixel(coord);
 
-    let ray_origin = vec3<f32>(0.0, 0.0, -1.0);
+    return color;
+}   
+
+fn per_pixel(coord: vec2<f32>) -> vec4<f32> {
+    let ray_origin = vec3<f32>(0.0, 0.0, 1.0);
     let ray_direction = vec3<f32>(coord.x, coord.y, -1.0);
     let sphere_radius = 0.5;
 
@@ -31,9 +36,21 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let c = dot(ray_origin, ray_origin) - pow(sphere_radius, 2.0);
 
     let discriminant = b * b - 4.0 * a * c;
-    if discriminant > 0.0 {
-        return vec4<f32>(0.0, 0.4, 1.0, 1.0);
+    if discriminant < 0.0 {
+        return vec4<f32>(0.0, 0.0, 0.0, 1.0);
     }
 
-    return vec4<f32>(1.0, 1.0, 1.0, 1.0);
-} 
+    let closestT = (-b - sqrt(discriminant)) / (2.0 * a);
+    let t0 = (-b + sqrt(discriminant)) / (2.0 * a);
+
+    let hit_point = ray_origin + ray_direction * closestT;
+    let hit_normal = normalize(hit_point);
+
+    let light_dir = normalize(vec3<f32>(-1.0, -1.0, -1.0));
+    let light_intensity = max(dot(hit_normal, -light_dir), 0.0);
+
+    var sphere_color = vec3<f32>(0.0, 1.0, 1.0);
+    sphere_color *= light_intensity;
+
+    return vec4<f32>(sphere_color, 1.0);
+}
