@@ -1,6 +1,7 @@
 use crate::{renderer::Renderer, GpuContext};
 
 use winit::{
+    dpi::LogicalSize,
     event::{ElementState, Event, KeyEvent, WindowEvent},
     event_loop::EventLoopBuilder,
     keyboard::{KeyCode, PhysicalKey},
@@ -9,7 +10,10 @@ use winit::{
 
 pub async fn run() {
     let event_loop = EventLoopBuilder::new().build().unwrap();
-    let window = WindowBuilder::new().build(&event_loop).unwrap();
+    let window = WindowBuilder::new()
+        .with_inner_size(LogicalSize::new(800, 800))
+        .build(&event_loop)
+        .unwrap();
 
     let mut context = GpuContext::new(&window).await;
     let renderer = Renderer::new(&context);
