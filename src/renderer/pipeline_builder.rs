@@ -29,7 +29,7 @@ impl PiplineBuilder {
         self.pixel_format = pixel_format;
     }
 
-    pub fn build(&self, device: &wgpu::Device, frame_data_group_layout: &wgpu::BindGroupLayout) -> wgpu::RenderPipeline {
+    pub fn build(&self, device: &wgpu::Device, bind_group_layouts: &[&wgpu::BindGroupLayout; 1]) -> wgpu::RenderPipeline {
         let mut filepath = current_dir().unwrap();
         filepath.push("src/");
         filepath.push(self.shader_filename.as_str());
@@ -44,7 +44,7 @@ impl PiplineBuilder {
 
         let pipeline_layout_descriptor = wgpu::PipelineLayoutDescriptor {
             label: Some("Render pipeline layout"),
-            bind_group_layouts: &[frame_data_group_layout],
+            bind_group_layouts,
             push_constant_ranges: &[],
         };
         let render_pipeline_layout = device.create_pipeline_layout(&pipeline_layout_descriptor);

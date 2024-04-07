@@ -1,4 +1,3 @@
-use wgpu::util::DeviceExt;
 use winit::window::Window;
 
 use crate::{
@@ -6,8 +5,12 @@ use crate::{
     GpuContext,
 };
 
-use self::pipeline_builder::PiplineBuilder;
+use self::{
+    containers::{BindGroupContainer, BufferContainer},
+    pipeline_builder::PiplineBuilder,
+};
 
+pub mod containers;
 mod pipeline_builder;
 
 #[repr(C)]
@@ -44,66 +47,42 @@ const INDICES: &[u16] = &[
 ];
 
 pub struct Renderer {
-    frame_data_buffer: wgpu::Buffer,
-    frame_data_bind_group: wgpu::BindGroup,
-    index_buffer: wgpu::Buffer,
+    bind_groups: BindGroupContainer,
+    buffers: BufferContainer,
     render_pipeline: wgpu::RenderPipeline,
-    vertex_buffer: wgpu::Buffer,
 }
 
 impl Renderer {
     pub fn new(context: &GpuContext) -> Self {
-        let vertex_buffer = context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(VERTICES),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
+        let bind_group_layouts: [&wgpu::BindGroupLayout; 1];
 
-        let index_buffer = context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Index Buffer"),
-            contents: bytemuck::cast_slice(INDICES),
-            usage: wgpu::BufferUsages::INDEX,
-        });
+        let mut buffers = BufferContainer::new();
+        let mut bind_groups = BindGroupContainer::new();
 
-        let frame_data_buffer = context.device.create_buffer(&wgpu::BufferDescriptor {
-            size: 16,
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-            label: Some("Frame data buffer"),
-        });
-        let frame_data_group_layout = context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            }],
-            label: Some("Frame data group layout"),
-        });
-        let frame_data_bind_group = context.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &frame_data_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: frame_data_buffer.as_entire_binding(),
-            }],
-            label: Some("Frame data bind group"),
-        });
+        buffers.create_vertex_buffer_init(bytemuck::cast_slice(VERTICES), context, "Vertex buffer");
+        buffers.create_index_buffer_init(bytemuck::cast_slice(INDICES), context, "Index buffer");
+        buffers.create_uniform_buffer(context, "Frame data buffer", 16);
+
+        let binding_0 = BindGroupContainer::create_layout(0, context, "Frame data bind group");
+
+        bind_group_layouts = [&binding_0];
+        bind_groups.create_bind_group(
+            0,
+            &buffers.get("Frame data buffer"),
+            context,
+            "Frame data bind group",
+            bind_group_layouts[0],
+        );
 
         let mut pipeline_builder = PiplineBuilder::new();
         pipeline_builder.set_shader_module("shaders/shader.wgsl", "vs_main", "fs_main");
         pipeline_builder.set_pixel_format(context.surface_config.format);
-        let render_pipeline = pipeline_builder.build(&context.device, &frame_data_group_layout);
+        let render_pipeline = pipeline_builder.build(&context.device, &bind_group_layouts);
 
         Self {
-            frame_data_buffer,
-            frame_data_bind_group,
-            index_buffer,
+            bind_groups,
+            buffers,
             render_pipeline,
-            vertex_buffer,
         }
     }
     pub fn render(
@@ -142,12 +121,13 @@ impl Renderer {
         let frame_data: [f32; 2] = [1920.0, 1080.0];
         context
             .queue
-            .write_buffer(&self.frame_data_buffer, 0, bytemuck::cast_slice(&frame_data));
+            .write_buffer(&self.buffers.get("Frame data buffer"), 0, bytemuck::cast_slice(&frame_data));
+
+        render_pass.set_bind_group(0, &self.bind_groups.get("Frame data bind group"), &[]);
+        render_pass.set_vertex_buffer(0, self.buffers.get("Vertex buffer").slice(..));
+        render_pass.set_index_buffer(self.buffers.get("Index buffer").slice(..), wgpu::IndexFormat::Uint16);
 
         render_pass.set_pipeline(&self.render_pipeline);
-        render_pass.set_bind_group(0, &self.frame_data_bind_group, &[]);
-        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-        render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
         render_pass.draw_indexed(0..INDICES.len() as u32, 0, 0..1);
         drop(render_pass);
 
