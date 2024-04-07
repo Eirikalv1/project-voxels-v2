@@ -3,6 +3,7 @@ use std::time::Instant;
 use winit::{dpi::PhysicalSize, window::Window};
 
 pub mod engine_loop;
+mod gui;
 mod renderer;
 
 pub struct GpuContext<'a> {
@@ -10,6 +11,7 @@ pub struct GpuContext<'a> {
     queue: wgpu::Queue,
     surface: wgpu::Surface<'a>,
     surface_config: wgpu::SurfaceConfiguration,
+    surface_format: wgpu::TextureFormat,
 }
 
 impl<'a> GpuContext<'a> {
@@ -63,6 +65,7 @@ impl<'a> GpuContext<'a> {
             queue,
             surface,
             surface_config,
+            surface_format,
         }
     }
 
@@ -76,27 +79,22 @@ impl<'a> GpuContext<'a> {
 }
 
 pub struct FrameTimer {
-    start: Instant,
-    end: Instant,
+    time: Instant,
+    delta_time: u128,
 }
 
 impl FrameTimer {
     pub fn new() -> Self {
         FrameTimer {
-            start: Instant::now(),
-            end: Instant::now(),
+            time: Instant::now(),
+            delta_time: 0,
         }
     }
 
-    pub fn start(&mut self) {
-        self.start = Instant::now();
-    }
-
-    pub fn end(&mut self) {
-        self.end = Instant::now();
-    }
-
-    pub fn delta_time(&self) -> u128 {
-        (self.end - self.start).as_millis()
+    pub fn delta_time(&mut self) -> u128 {
+        let new_time = Instant::now();
+        self.delta_time = (new_time - self.time).as_millis();
+        self.time = new_time;
+        self.delta_time
     }
 }

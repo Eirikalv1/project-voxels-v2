@@ -1,6 +1,11 @@
+use egui_wgpu::ScreenDescriptor;
 use wgpu::util::DeviceExt;
+use winit::window::Window;
 
-use crate::GpuContext;
+use crate::{
+    gui::{gui, EguiRenderer},
+    GpuContext,
+};
 
 use self::pipeline_builder::PiplineBuilder;
 
@@ -102,7 +107,13 @@ impl Renderer {
             vertex_buffer,
         }
     }
-    pub fn render(&self, context: &GpuContext) -> Result<(), wgpu::SurfaceError> {
+    pub fn render(
+        &self,
+        context: &GpuContext,
+        egui: &mut EguiRenderer,
+        window: &Window,
+        frametime: u128,
+    ) -> Result<(), wgpu::SurfaceError> {
         let drawable = context.surface.get_current_texture()?;
         let image_view_descriptor = wgpu::TextureViewDescriptor::default();
         let image_view = drawable.texture.create_view(&image_view_descriptor);
@@ -140,6 +151,32 @@ impl Renderer {
         render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
         render_pass.draw_indexed(0..INDICES.len() as u32, 0, 0..1);
         drop(render_pass);
+
+        let screen_descriptor = ScreenDescriptor {
+            size_in_pixels: [context.surface_config.width, context.surface_config.height],
+            pixels_per_point: window.scale_factor() as f32,
+        };
+
+        let view = drawable.texture.create_view(&wgpu::TextureViewDescriptor {
+            label: None,
+            format: None,
+            dimension: None,
+            aspect: wgpu::TextureAspect::All,
+            base_mip_level: 0,
+            mip_level_count: None,
+            base_array_layer: 0,
+            array_layer_count: None,
+        });
+
+        egui.draw(
+            &context.device,
+            &mut command_encoder,
+            &context.queue,
+            |ui| gui(ui, frametime),
+            screen_descriptor,
+            &window,
+            &view,
+        );
 
         context.queue.submit(std::iter::once(command_encoder.finish()));
 
