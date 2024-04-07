@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use wgpu1::engine_loop::run;
+use project_voxels_v2::engine_loop::run;
 
 fn _main2() {
     std::env::set_var("RUST_LOG", "error");

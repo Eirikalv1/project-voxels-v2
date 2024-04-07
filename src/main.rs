@@ -1,4 +1,4 @@
-use wgpu1::engine_loop::run;
+use project_voxels_v2::engine_loop::run;
 
 fn main() {
     std::env::set_var("RUST_LOG", "error");

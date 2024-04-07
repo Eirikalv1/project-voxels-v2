@@ -1423,6 +1423,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43d84d1d7a6ac92673717f9f6d1518374ef257669c24ebc5ac25d5033828be58"
 
 [[package]]
+name = "project-voxels-v2"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "criterion",
+ "egui",
+ "egui-wgpu",
+ "egui-winit",
+ "log",
+ "pollster",
+ "pretty_env_logger",
+ "wgpu",
+ "winit",
+]
+
+[[package]]
 name = "quick-xml"
 version = "0.31.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2249,22 +2265,6 @@ dependencies = [
  "bitflags 2.5.0",
  "js-sys",
  "web-sys",
-]
-
-[[package]]
-name = "wgpu1"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "criterion",
- "egui",
- "egui-wgpu",
- "egui-winit",
- "log",
- "pollster",
- "pretty_env_logger",
- "wgpu",
- "winit",
 ]
 
 [[package]]
