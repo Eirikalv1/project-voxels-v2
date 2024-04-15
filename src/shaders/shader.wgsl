@@ -16,19 +16,31 @@ fn vs_main(model: VertexInput) -> VertexOutput {
     return out;
 }
 
+struct Camera {
+    position: vec3<f32>,
+    projection_inverse: mat4x4<f32>,
+    view_inverse: mat4x4<f32>,
+}
+
 @group(0) @binding(0) var<uniform> frame_data: vec2<f32>;
+@group(1) @binding(0) var<uniform> camera: Camera;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let coord = vec2<f32>(in.color) * 2.0 - 1.0; // -1 -> 1
+
     let color = per_pixel(coord);
 
     return color;
 }   
 
 fn per_pixel(coord: vec2<f32>) -> vec4<f32> {
-    let ray_origin = vec3<f32>(0.0, 0.0, 1.0);
-    let ray_direction = vec3<f32>(coord.x, coord.y, -1.0);
+    let cameraTarget = camera.projection_inverse * vec4<f32>(coord.x, coord.y, 1.0, 1.0);
+    let t = normalize((cameraTarget.xyz / cameraTarget.w));
+    let ray_direction = (camera.view_inverse * vec4<f32>(t.x, t.y, t.z, 0.0)).xyz;
+
+    let ray_origin = camera.position;
+
     let sphere_radius = 0.5;
 
     let a = dot(ray_direction, ray_direction);

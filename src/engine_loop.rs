@@ -1,4 +1,4 @@
-use crate::{gui::EguiRenderer, input::InputState, renderer::Renderer, FrameTimer, GpuContext};
+use crate::{camera::Camera, gui::EguiRenderer, input::InputState, renderer::Renderer, FrameTimer, GpuContext};
 
 use winit::{
     dpi::LogicalSize,
@@ -14,6 +14,8 @@ pub async fn run() {
         .with_inner_size(LogicalSize::new(800, 800))
         .build(&event_loop)
         .unwrap();
+
+    let mut camera = Camera::new();
 
     let mut context = GpuContext::new(&window).await;
     let renderer = Renderer::new(&context);
@@ -40,7 +42,7 @@ pub async fn run() {
                     } => {
                         elwt.exit();
                     }
-                    WindowEvent::RedrawRequested => match renderer.render(&context, &mut egui, window, frame_timer.delta_time()) {
+                    WindowEvent::RedrawRequested => match renderer.render(&camera, &context, &mut egui, window, frame_timer.delta_time()) {
                         Ok(_) => {}
                         Err(wgpu::SurfaceError::Lost) => elwt.exit(),
                         Err(wgpu::SurfaceError::OutOfMemory) => elwt.exit(),
@@ -52,12 +54,15 @@ pub async fn run() {
                     }
                     _ => (),
                 };
+
                 input_handler.handle_event(event);
+
                 egui.handle_input(window, event);
                 window.request_redraw();
             }
             Event::AboutToWait => {
                 input_handler.after_main_events();
+                camera.on_update(&input_handler);
             }
 
             _ => {}

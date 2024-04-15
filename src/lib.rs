@@ -3,6 +3,7 @@ use std::time::Instant;
 use glam::Vec2;
 use winit::{dpi::PhysicalSize, window::Window};
 
+pub mod camera;
 pub mod engine_loop;
 mod gui;
 mod input;

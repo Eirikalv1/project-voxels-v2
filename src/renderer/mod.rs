@@ -1,6 +1,7 @@
 use winit::window::Window;
 
 use crate::{
+    camera::{Camera, CameraUniform},
     gui::{gui, EguiRenderer},
     GpuContext,
 };
@@ -54,24 +55,33 @@ pub struct Renderer {
 
 impl Renderer {
     pub fn new(context: &GpuContext) -> Self {
-        let bind_group_layouts: [&wgpu::BindGroupLayout; 1];
+        let bind_group_layouts: [&wgpu::BindGroupLayout; 2];
 
         let mut buffers = BufferContainer::new();
         let mut bind_groups = BindGroupContainer::new();
 
         buffers.create_vertex_buffer_init(bytemuck::cast_slice(VERTICES), context, "Vertex buffer");
         buffers.create_index_buffer_init(bytemuck::cast_slice(INDICES), context, "Index buffer");
+        buffers.create_uniform_buffer(context, "Camera buffer", std::mem::size_of::<CameraUniform>() as u64);
         buffers.create_uniform_buffer(context, "Frame data buffer", 16);
 
         let binding_0 = BindGroupContainer::create_layout(0, context, "Frame data bind group");
+        let binding_1 = BindGroupContainer::create_layout(0, context, "Camera bind group");
 
-        bind_group_layouts = [&binding_0];
+        bind_group_layouts = [&binding_0, &binding_1];
         bind_groups.create_bind_group(
             0,
             &buffers.get("Frame data buffer"),
             context,
             "Frame data bind group",
             bind_group_layouts[0],
+        );
+        bind_groups.create_bind_group(
+            0,
+            &buffers.get("Camera buffer"),
+            context,
+            "Camera bind group",
+            bind_group_layouts[1],
         );
 
         let mut pipeline_builder = PiplineBuilder::new();
@@ -87,6 +97,7 @@ impl Renderer {
     }
     pub fn render(
         &self,
+        camera: &Camera,
         context: &GpuContext,
         egui: &mut EguiRenderer,
         window: &Window,
@@ -119,11 +130,17 @@ impl Renderer {
         let mut render_pass = command_encoder.begin_render_pass(&render_pass_descriptor);
 
         let frame_data: [f32; 2] = [1920.0, 1080.0];
+
         context
             .queue
             .write_buffer(&self.buffers.get("Frame data buffer"), 0, bytemuck::cast_slice(&frame_data));
 
+        context
+            .queue
+            .write_buffer(&self.buffers.get("Camera buffer"), 0, bytemuck::cast_slice(&[camera.get_uniform()]));
+
         render_pass.set_bind_group(0, &self.bind_groups.get("Frame data bind group"), &[]);
+        render_pass.set_bind_group(1, &self.bind_groups.get("Camera bind group"), &[]);
         render_pass.set_vertex_buffer(0, self.buffers.get("Vertex buffer").slice(..));
         render_pass.set_index_buffer(self.buffers.get("Index buffer").slice(..), wgpu::IndexFormat::Uint16);
 

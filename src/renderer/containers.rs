@@ -86,6 +86,14 @@ impl BufferContainer {
         });
         self.0.insert(label.to_string(), buffer);
     }
+    pub fn create_uniform_buffer_init(&mut self, contents: &[u8], context: &GpuContext, label: &str) {
+        let buffer = context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some(label),
+            contents,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+        self.0.insert(label.to_string(), buffer);
+    }
     pub fn create_vertex_buffer_init(&mut self, contents: &[u8], context: &GpuContext, label: &str) {
         let buffer = context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some(label),
