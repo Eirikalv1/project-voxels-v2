@@ -1,9 +1,11 @@
 use std::time::Instant;
 
+use glam::Vec2;
 use winit::{dpi::PhysicalSize, window::Window};
 
 pub mod engine_loop;
 mod gui;
+mod input;
 mod renderer;
 
 pub struct GpuContext<'a> {
@@ -103,5 +105,18 @@ impl FrameTimer {
 impl Default for FrameTimer {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+pub trait ScreenSpace {
+    fn to_screen_space(&self, width: &f32, height: &f32) -> Vec2;
+}
+
+impl ScreenSpace for Vec2 {
+    fn to_screen_space(&self, width: &f32, height: &f32) -> Vec2 {
+        Vec2 {
+            x: (self.x / width) * 2.0 - 1.0,
+            y: -(self.y / height) * 2.0 + 1.0,
+        }
     }
 }

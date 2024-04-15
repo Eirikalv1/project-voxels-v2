@@ -1,4 +1,4 @@
-use crate::{gui::EguiRenderer, renderer::Renderer, FrameTimer, GpuContext};
+use crate::{gui::EguiRenderer, input::InputState, renderer::Renderer, FrameTimer, GpuContext};
 
 use winit::{
     dpi::LogicalSize,
@@ -20,6 +20,7 @@ pub async fn run() {
     let mut egui = EguiRenderer::new(&context.device, &window, context.surface_format);
 
     let mut frame_timer = FrameTimer::new();
+    let mut input_handler = InputState::new();
 
     let window = &window;
     event_loop
@@ -51,8 +52,12 @@ pub async fn run() {
                     }
                     _ => (),
                 };
-                window.request_redraw();
+                input_handler.handle_event(event);
                 egui.handle_input(window, event);
+                window.request_redraw();
+            }
+            Event::AboutToWait => {
+                input_handler.after_main_events();
             }
 
             _ => {}
