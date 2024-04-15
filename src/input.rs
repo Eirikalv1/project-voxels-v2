@@ -65,7 +65,7 @@ impl InputState {
                 }
             }
             WindowEvent::CursorMoved { position, .. } => {
-                self.mouse_position = vec2(position.x as f32, -position.y as f32).to_screen_space(&800.0, &800.0);
+                self.mouse_position = vec2(position.x as f32, position.y as f32).to_screen_space(&800.0, &800.0);
             }
             WindowEvent::MouseInput { button, state, .. } => match button {
                 MouseButton::Left => {

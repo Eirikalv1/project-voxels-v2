@@ -117,7 +117,7 @@ impl ScreenSpace for Vec2 {
     fn to_screen_space(&self, width: &f32, height: &f32) -> Vec2 {
         Vec2 {
             x: (self.x / width) * 2.0 - 1.0,
-            y: -(self.y / height) * 2.0 + 1.0,
+            y: (self.y / height) * 2.0 - 1.0,
         }
     }
 }
